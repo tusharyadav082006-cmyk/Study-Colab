@@ -1,6 +1,6 @@
 // script.js - unified frontend for dashboard + sidebar + modules
 
-const API = ""; // same origin
+const API = "https://study-colab-1.onrender.com"; // Points to your Render backend
 let token = null;
 let me = null;
 let socket = null;
@@ -15,28 +15,34 @@ const hide = el => el && el.classList.add('hidden');
 // initial view
 showRegister();
 
+// --- View Management Functions (Updated to hide/show left-card) ---
 function showRegister(){
+  show($('left-card')); // Ensure Login card is visible
   $('brand').innerText = 'Register';
   show($('register-form')); hide($('login-form')); hide($('profile-view')); hide($('dashboard-view'));
   hide($('module-card')); hide($('sidebar'));
 }
 function showLogin(){
+  show($('left-card')); // Ensure Login card is visible
   $('brand').innerText = 'Login';
   hide($('register-form')); show($('login-form')); hide($('profile-view')); hide($('dashboard-view'));
   hide($('module-card')); hide($('sidebar'));
 }
 function showProfile(){
+  show($('left-card'));
   hide($('register-form')); hide($('login-form')); show($('profile-view')); hide($('dashboard-view'));
   hide($('module-card')); hide($('sidebar'));
   if(me) $('profile-info').innerHTML = `<strong>${me.username}</strong><br>Role: ${me.role}`;
 }
 function showDashboard(){
+  show($('left-card'));
   hide($('register-form')); hide($('login-form')); hide($('profile-view'));
   show($('dashboard-view')); hide($('module-card')); hide($('sidebar'));
   document.body.classList.remove('sidebar-open');
   loadModules();
 }
 
+// --- Auth Functions (Robust Error Handling) ---
 async function register(){
   const username = $('reg-username').value.trim();
   const password = $('reg-password').value;
@@ -50,7 +56,7 @@ async function register(){
   $('reg-msg').innerText = 'Registering...';
 
   try {
-    const res = await fetch('/api/user/register', {
+    const res = await fetch(`${API}/api/user/register`, {
         method:'POST', 
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({username, password, role, profile:{}})
@@ -60,15 +66,13 @@ async function register(){
         $('reg-msg').innerText = 'Registered — please login'; 
         showLogin(); 
     } else {
-        // Handle errors (including non-JSON errors like 400 Bad Request)
         let errorMsg = `Registration failed (Status: ${res.status})`;
         try {
             const j = await res.json();
             errorMsg = j.error || errorMsg;
         } catch (e) {
-            // If JSON parse fails, read plain text response
             const text = await res.text();
-            if(text) errorMsg = text; // Often contains "username exists"
+            if(text) errorMsg = text; 
         }
         $('reg-msg').innerText = errorMsg;
     }
@@ -90,7 +94,7 @@ async function login(){
   $('login-msg').innerText = 'Logging in...';
 
   try {
-    const res = await fetch('/api/user/login', {
+    const res = await fetch(`${API}/api/user/login`, {
       method:'POST', 
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({username, password})
@@ -109,7 +113,6 @@ async function login(){
            $('login-msg').innerText = 'Login failed: No token received.';
        }
     } else {
-       // Handle server errors gracefully
        let errorMsg = 'Login failed';
        try {
            const j = await res.json();
@@ -127,7 +130,7 @@ async function login(){
 }
 
 async function fetchProfile(){
-  const res = await fetch('/api/user/me', { headers: { 'Authorization': token } });
+  const res = await fetch(`${API}/api/user/me`, { headers: { 'Authorization': token } });
   if(res.ok){ me = await res.json(); }
 }
 
@@ -142,7 +145,7 @@ function logout(){
 async function loadModules(){
   if(!me) return;
   const role = me.role || 'student';
-  const res = await fetch(`/api/dashboard/modules?role=${role}`);
+  const res = await fetch(`${API}/api/dashboard/modules?role=${role}`);
   const j = await res.json();
   const grid = $('modules-grid'); grid.innerHTML = '';
   $('modules-count').innerText = `${j.count || j.modules.length} modules available`;
@@ -156,10 +159,11 @@ async function loadModules(){
   });
 }
 
-// enable sidebar mode and build vertical menu
 function enableSidebarMode(modules){
   hide($('dashboard-view'));
+  hide($('left-card')); // FIX: Hide the Login/Dashboard card
   show($('sidebar'));
+  
   const sb = $('sidebar-modules'); sb.innerHTML = '';
   modules.forEach(m => {
     const node = document.createElement('div');
@@ -171,20 +175,19 @@ function enableSidebarMode(modules){
   document.body.classList.add('sidebar-open');
 }
 
-// open module - activates sidebar mode and shows module panel
 async function openModule(id, title){
   currentModule = id;
   $('module-title').innerText = title;
-  // load modules list to populate sidebar
-  const res = await fetch(`/api/dashboard/modules?role=${me.role}`);
+  
+  const res = await fetch(`${API}/api/dashboard/modules?role=${me.role}`);
   const j = await res.json();
   const modules = j.modules || [];
   enableSidebarMode(modules);
 
-  // show module-card and relevant UI pane
   show($('module-card'));
   const panes = document.querySelectorAll('.module');
   panes.forEach(p => p.classList.add('hidden'));
+  
   const map = {
     'attendance': 'attendance-ui',
     'lms': 'lms-ui',
@@ -202,11 +205,10 @@ async function openModule(id, title){
   };
   const paneId = map[id];
   if(paneId) show($(paneId));
-  // specialized actions
+  
   if(id === 'chat') listGroups();
   if(id === 'lms') $('lms-username').value = me.username || '';
   if(id === 'attendance'){
-    // if student show student view
     if(me.role === 'student'){
       show($('student-view'));
       $('my-roll').innerText = me.profile && me.profile.rollno ? me.profile.rollno : 'N/A';
@@ -216,11 +218,11 @@ async function openModule(id, title){
   }
 }
 
-// back to centered dashboard
 function backToDashboard(){
   hide($('module-card'));
   hide($('sidebar'));
   document.body.classList.remove('sidebar-open');
+  show($('left-card')); // FIX: Show the Login/Dashboard card again
   showDashboard();
 }
 
@@ -228,7 +230,7 @@ function backToDashboard(){
 async function loadGroupMembers(){
   const gid = $('att-group-id').value.trim();
   if(!gid){ alert('Enter group id'); return; }
-  const res = await fetch(`/api/attendance/group_members?group_id=${encodeURIComponent(gid)}`);
+  const res = await fetch(`${API}/api/attendance/group_members?group_id=${encodeURIComponent(gid)}`);
   const j = await res.json();
   if(j.error){ $('group-members-list').innerText = j.error; return; }
   const list = $('group-members-list'); list.innerHTML = '';
@@ -243,19 +245,19 @@ async function submitAttendance(){
   const gid = $('att-group-id').value.trim();
   const present = $('present-rolls').value.split(',').map(x=>x.trim()).filter(x=>x).map(Number);
   const payload = { role: me.role, group_id: gid, present };
-  const res = await fetch('/api/attendance/mark', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const res = await fetch(`${API}/api/attendance/mark`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
   const j = await res.json();
   $('attendance-result').innerText = JSON.stringify(j,null,2);
 }
 async function viewMyAttendance(){
   const roll = $('progress-roll').value || (me.profile && me.profile.rollno);
   if(!roll){ alert('roll missing'); return; }
-  const res = await fetch(`/api/attendance/my?rollno=${encodeURIComponent(roll)}`);
+  const res = await fetch(`${API}/api/attendance/my?rollno=${encodeURIComponent(roll)}`);
   const j = await res.json();
   $('my-attendance-result').innerText = JSON.stringify(j,null,2);
 }
 
-// -------- LMS actions (file upload & list) --------
+// -------- LMS actions --------
 async function uploadLmsFile(){
   const gid = $('lms-group-id').value.trim();
   const username = $('lms-username').value.trim() || me.username;
@@ -265,7 +267,7 @@ async function uploadLmsFile(){
   fd.append('group_id', gid);
   fd.append('username', username);
   fd.append('file', fileInput.files[0]);
-  const res = await fetch('/api/lms/upload', { method:'POST', body: fd });
+  const res = await fetch(`${API}/api/lms/upload`, { method:'POST', body: fd });
   const j = await res.json();
   alert(j.uploaded ? 'Uploaded' : (j.error || 'Upload failed'));
 }
@@ -273,7 +275,7 @@ async function uploadLmsFile(){
 async function listLmsFiles(){
   const gid = $('lms-group-id').value.trim();
   if(!gid){ alert('Group ID required'); return; }
-  const res = await fetch(`/api/lms/files?group_id=${encodeURIComponent(gid)}`);
+  const res = await fetch(`${API}/api/lms/files?group_id=${encodeURIComponent(gid)}`);
   const j = await res.json();
   const el = $('lms-files'); el.innerHTML = '';
   if(j.files && j.files.length){
@@ -285,11 +287,11 @@ async function listLmsFiles(){
   } else el.innerText = 'No files';
 }
 
-// -------- Progress (report) --------
+// -------- Progress --------
 async function loadProgress(){
   const roll = $('progress-roll').value || (me.profile && me.profile.rollno);
   if(!roll){ alert('Provide roll'); return; }
-  const res = await fetch(`/api/progress/report/${encodeURIComponent(roll)}`);
+  const res = await fetch(`${API}/api/progress/report/${encodeURIComponent(roll)}`);
   const j = await res.json();
   $('progress-result').innerText = JSON.stringify(j,null,2);
 }
@@ -301,13 +303,13 @@ async function sendNotification(){
   const type = $('notif-type').value;
   if(!target || !msg){ alert('target and message required'); return; }
   const payload = { role: me.role, msg };
-  if(type === 'group'){ payload.group_id = target; await fetch('/api/notifications/send_group', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); }
-  else { payload.username = target; await fetch('/api/notifications/send_user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); }
+  if(type === 'group'){ payload.group_id = target; await fetch(`${API}/api/notifications/send_group`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); }
+  else { payload.username = target; await fetch(`${API}/api/notifications/send_user`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); }
   alert('Sent (if permitted)');
 }
 async function loadMyNotifs(){
   const username = me.username;
-  const res = await fetch(`/api/notifications/list?username=${encodeURIComponent(username)}`);
+  const res = await fetch(`${API}/api/notifications/list?username=${encodeURIComponent(username)}`);
   const j = await res.json();
   const el = $('notifs-list'); el.innerHTML = '';
   (j.notifications || []).forEach(n => {
@@ -319,7 +321,8 @@ async function loadMyNotifs(){
 // -------- Chat (socket.io) --------
 function initSocket(){
   if(socket) return;
-  socket = io();
+  // Initialize socket with the API URL
+  socket = io(API);
   socket.on('connect', ()=> console.log('socket connected'));
   socket.on('receive_message', data => appendMessage(data.username, data.message, false));
   socket.on('system_message', data => appendSystem(data.msg));
@@ -327,12 +330,12 @@ function initSocket(){
 }
 async function createGroup(){
   const groupName = $('chat-group-name').value || 'Group';
-  const res = await fetch('/api/chat/create_group', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: groupName})});
+  const res = await fetch(`${API}/api/chat/create_group`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: groupName})});
   const j = await res.json();
   $('groups-list').innerText = `Created group: ${j.group_id} (${j.group_name})`;
 }
 async function listGroups(){
-  const res = await fetch('/api/chat/groups');
+  const res = await fetch(`${API}/api/chat/groups`);
   const j = await res.json();
   $('groups-list').innerText = JSON.stringify(j,null,2);
 }
@@ -340,7 +343,7 @@ async function joinGroup(){
   const groupId = $('chat-group').value.trim();
   const username = $('chat-username').value.trim() || me.username;
   if(!groupId || !username){ alert('enter group id and name'); return; }
-  const res = await fetch('/api/chat/join_group', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({group_id: groupId, username})});
+  const res = await fetch(`${API}/api/chat/join_group`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({group_id: groupId, username})});
   const j = await res.json(); if(j.error){ alert(j.error); return; }
   initSocket();
   socket.emit('join_room', { group_id: groupId, username });
@@ -365,28 +368,24 @@ function appendMessage(username, text, meFlag){
 function appendSystem(msg){ const box = $('chat-messages'); const div = document.createElement('div'); div.style.textAlign='center'; div.style.opacity=0.9; div.style.fontStyle='italic'; div.innerText = msg; box.appendChild(div); box.scrollTop = box.scrollHeight; }
 function emitTyping(){ const username = $('chat-username').value.trim() || me.username; if(!currentGroup || !username) return; socket.emit('typing', {group_id: currentGroup, username}); }
 
-// -------- Exams & Calendar & Others (basic)
+// -------- Exams & Calendar & Others --------
 async function createExam(){
   const title = $('exam-title').value.trim(); const date = $('exam-date').value.trim();
   if(!title || !date){ alert('title & date required'); return; }
-  await fetch('/api/exams/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, date, role: me.role})});
+  await fetch(`${API}/api/exams/create`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, date, role: me.role})});
   alert('Exam created');
 }
-async function loadExams(){ const res = await fetch('/api/exams/list'); const j = await res.json(); $('exams-list').innerText = JSON.stringify(j,null,2); }
-async function loadEvents(){ const res = await fetch('/api/calendar/list'); const j = await res.json(); $('events-list').innerText = JSON.stringify(j,null,2); }
-async function loadAnalytics(){ const res = await fetch('/api/analytics/overview'); const j = await res.json(); $('analytics-data').innerText = JSON.stringify(j,null,2); }
-async function createCourse(){ const title = $('course-title').value.trim() || 'Untitled'; await fetch('/api/course/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title})}); loadCourses(); }
-async function loadCourses(){ const res = await fetch('/api/course/list'); const j = await res.json(); $('course-list').innerText = JSON.stringify(j,null,2); }
-async function uploadDoc(){ const name = $('doc-name').value||'doc'; const url = $('doc-url').value||''; await fetch('/api/docs/upload', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,url})}); $('docs-list').innerText = JSON.stringify(await (await fetch('/api/docs/list')).json(),null,2); }
-async function getUsage(){ $('storage-data').innerText = JSON.stringify(await (await fetch('/api/storage/usage')).json(),null,2); }
-async function createTask(){ const title = $('task-title').value||'Task'; const assigned = $('task-assigned').value||me.username; await fetch('/api/tasks/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, desc:'', assigned_to: assigned})}); loadTasks(); }
-async function loadTasks(){ const res = await fetch(`/api/tasks/list?user=${encodeURIComponent(me.username)}`); $('task-list').innerText = JSON.stringify(await res.json(),null,2); }
-async function listUsers(){ $('users-list').innerText = JSON.stringify(await (await fetch('/api/user/list')).json(),null,2); }
+async function loadExams(){ const res = await fetch(`${API}/api/exams/list`); const j = await res.json(); $('exams-list').innerText = JSON.stringify(j,null,2); }
+async function loadEvents(){ const res = await fetch(`${API}/api/calendar/list`); const j = await res.json(); $('events-list').innerText = JSON.stringify(j,null,2); }
+async function loadAnalytics(){ const res = await fetch(`${API}/api/analytics/overview`); const j = await res.json(); $('analytics-data').innerText = JSON.stringify(j,null,2); }
+async function createCourse(){ const title = $('course-title').value.trim() || 'Untitled'; await fetch(`${API}/api/course/add`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title})}); loadCourses(); }
+async function loadCourses(){ const res = await fetch(`${API}/api/course/list`); const j = await res.json(); $('course-list').innerText = JSON.stringify(j,null,2); }
+async function uploadDoc(){ const name = $('doc-name').value||'doc'; const url = $('doc-url').value||''; await fetch(`${API}/api/docs/upload`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,url})}); $('docs-list').innerText = JSON.stringify(await (await fetch(`${API}/api/docs/list`)).json(),null,2); }
+async function getUsage(){ $('storage-data').innerText = JSON.stringify(await (await fetch(`${API}/api/storage/usage`)).json(),null,2); }
+async function createTask(){ const title = $('task-title').value||'Task'; const assigned = $('task-assigned').value||me.username; await fetch(`${API}/api/tasks/create`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, desc:'', assigned_to: assigned})}); loadTasks(); }
+async function loadTasks(){ const res = await fetch(`${API}/api/tasks/list?user=${encodeURIComponent(me.username)}`); $('task-list').innerText = JSON.stringify(await res.json(),null,2); }
+async function listUsers(){ $('users-list').innerText = JSON.stringify(await (await fetch(`${API}/api/user/list`)).json(),null,2); }
 
-// init socket after login
-function initSocket(){ if(socket) return; socket = io(); socket.on('connect', ()=> console.log('socket connected')); socket.on('receive_message', data => appendMessage(data.username, data.message, false)); socket.on('system_message', data => appendSystem(data.msg)); socket.on('typing', data => { $('typing-indicator').innerText = `${data.username} is typing...`; setTimeout(()=> $('typing-indicator').innerText='', 900); }); }
-
-// small helper to ensure dashboard modules load when returning
+// Helpers for console debugging
 window.showDashboard = showDashboard;
 window.openModule = openModule;
-
