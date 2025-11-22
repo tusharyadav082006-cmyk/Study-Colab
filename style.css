@@ -1,0 +1,179 @@
+/* =========================================================
+   RAINBOW BACKGROUND (NO YELLOW/ORANGE) — SLOW ANIMATION
+   ========================================================= */
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: linear-gradient(120deg, #9d50bb, #6e48aa, #4776e6, #8e54e9, #00c6ff, #00ffba);
+  background-size: 600% 600%;
+  animation: rainbowMove 40s ease infinite;
+
+  font-family: "Inter", sans-serif;
+}
+@keyframes rainbowMove {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* MAIN CONTAINER */
+.container {
+  width: 95%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+/* LEFT CARD */
+.card {
+  width: 100%;
+  max-width: 720px; /* allow larger so grid fits comfortably */
+  padding: 26px;
+  text-align: center;
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(12px);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  color: white;
+}
+
+/* HERO IMAGE */
+.hero-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+/* HEADINGS */
+h1, h2, h3 {
+  margin: 6px 0;
+  font-weight: 700;
+}
+h1#brand, .dashboard-title {
+  color: #00ff99;
+  font-size: 30px;
+}
+h2 { color: #fff; font-size: 22px; }
+
+/* INPUTS */
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.03);
+  color: white;
+  font-size: 14px;
+  outline: none;
+}
+textarea { min-height: 80px; resize: vertical; }
+
+/* BUTTONS */
+.btn {
+  display: inline-block;
+  padding: 10px 14px;
+  margin: 8px 6px 8px 0;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(90deg,#00e6b8,#00cfa5);
+  color: #002;
+  font-weight: 700;
+}
+.btn.small { padding: 8px 10px; font-size: 13px; }
+
+/* DASHBOARD GRID — Option A: MORE SPACING */
+.modules-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 per row */
+  gap: 30px; /* increased spacing */
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+/* MODULE CARD ITEM */
+.module-card-item {
+  background: rgba(255,255,255,0.14);
+  padding: 18px;
+  border-radius: 14px;
+  color: white;
+  min-height: 140px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
+}
+.module-card-item:hover {
+  transform: translateY(-6px) scale(1.02);
+  background: rgba(255,255,255,0.24);
+}
+
+/* TITLE GREEN */
+.module-card-item .title {
+  color: #00ff99;
+  font-weight: 800;
+  font-size: 16px;
+}
+.module-card-item .desc {
+  font-size: 13px;
+  margin-top: 6px;
+  opacity: 0.95;
+}
+
+/* MODULE PANEL (right) */
+.module-card {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(255,255,255,0.12);
+  padding: 18px;
+  border-radius: 14px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.module-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.module-body { max-height: 72vh; overflow:auto; }
+
+/* CHAT UI */
+.chat-messages { height: 300px; overflow:auto; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; }
+.chat-message { padding: 8px 12px; background: rgba(0,0,0,0.45); border-radius: 12px; margin: 8px 0; max-width: 80%; }
+.chat-message.me { background: linear-gradient(90deg,#00d4a8,#00ffa0); color: #001; margin-left:auto; }
+
+/* ATTENDANCE UI */
+#group-members-list { margin-top:12px; background: rgba(255,255,255,0.02); padding:10px; border-radius:8px; max-height:200px; overflow:auto; }
+
+/* NOTIFICATIONS */
+#notifs-list { margin-top:10px; text-align:left; }
+
+/* SIDEBAR — appears when user selects a module */
+.sidebar {
+  position: fixed;
+  left: 28px;
+  top: 80px;
+  width: 220px;
+  background: rgba(0,0,0,0.35);
+  padding: 18px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  color: white;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.sidebar-title { color: #00ff99; text-align:center; margin-bottom:12px; }
+.sidebar-item { padding: 10px; margin-bottom:8px; border-radius:8px; background: rgba(255,255,255,0.03); cursor:pointer; }
+.sidebar-item:hover { transform: translateX(6px); background: rgba(255,255,255,0.08); }
+
+/* SHIFT module panel when sidebar present */
+.sidebar-open #module-card { margin-left: 260px; transition: margin .25s ease; }
+
+/* UTIL */
+.hidden { display:none; }
+.row { display:flex; gap:8px; }
+.typing { color:#fff; font-style:italic; height:20px; }
