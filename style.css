@@ -51,7 +51,20 @@ body {
   border-radius: 10px;
   margin-bottom: 12px;
 }
-
+/* Add this new section to style.css */
+input::placeholder,
+textarea::placeholder {
+  color: #333; /* Dark gray for placeholder */
+  opacity: 1; /* For Firefox */
+}
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+  color: #333;
+}
+input::-ms-input-placeholder,
+textarea::-ms-input-placeholder {
+  color: #333;
+}
 /* HEADINGS */
 h1, h2, h3 {
   margin: 6px 0;
@@ -177,4 +190,5 @@ textarea { min-height: 80px; resize: vertical; }
 .hidden { display:none; }
 .row { display:flex; gap:8px; }
 .typing { color:#fff; font-style:italic; height:20px; }
+
 
