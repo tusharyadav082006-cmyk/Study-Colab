@@ -1,45 +1,47 @@
-# app.py
+# app.py - Adjusted for Flat File Structure
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
+import os
 
-# Import blueprints for modules
-# Make sure these files exist in modules/ exactly as named.
-from modules.user_management import user_bp
-from modules.dashboard import dashboard_bp
-from modules.attendance import attendance_bp
-from modules.lms_module import lms_bp
-from modules.progress_report import progress_bp
-from modules.notifications import notifications_bp
-# realtime chat - this file should create `chat_rt_bp` and `socketio`
-from modules.chat_realtime import chat_rt_bp, socketio
-from modules.exams import exams_bp
-from modules.calendar_module import calendar_bp
-from modules.analytics import analytics_bp
-from modules.course_management import course_bp
-from modules.document_management import doc_bp
-from modules.storage_management import storage_bp
-from modules.task_management import task_bp
+# Import modules directly (since they are in the same folder now)
+from user_management import user_bp
+from dashboard import dashboard_bp
+from attendance import attendance_bp
+from lms_module import lms_bp
+from progress_report import progress_bp
+from notifications import notifications_bp
+from chat_realtime import chat_rt_bp, socketio
+from exams import exams_bp
+from calendar_module import calendar_bp
+from analytics import analytics_bp
+from course_management import course_bp
+from document_management import doc_bp
+from storage_management import storage_bp
+from task_management import task_bp
 
-app = Flask(__name__, static_folder="frontend", static_url_path="/frontend")
-CORS(app)  # allow cross-origin for development
+# Setup Flask to serve static files from the current directory (.)
+app = Flask(__name__, static_folder=".")
+CORS(app)
 app.secret_key = "dev_secret_key"
 
-# Serve SPA (index)
+# Serve SPA (index.html)
 @app.route("/", methods=["GET"])
 def index():
-    return send_from_directory("frontend", "index.html")
+    # Look for index.html in the current directory
+    return send_from_directory(".", "index.html")
 
-# Serve frontend assets (css/js/images)
+# Serve other frontend assets (css/js/images)
 @app.route("/<path:filename>")
 def frontend_files(filename):
-    return send_from_directory("frontend", filename)
+    # Look for files in the current directory
+    return send_from_directory(".", filename)
 
 # Simple health check
 @app.route("/api/health")
 def health():
     return jsonify({"status": "ok"})
 
-# Register API blueprints (prefix them to keep endpoints tidy)
+# Register API blueprints
 app.register_blueprint(user_bp, url_prefix="/api/user")
 app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
 app.register_blueprint(attendance_bp, url_prefix="/api/attendance")
@@ -55,10 +57,7 @@ app.register_blueprint(doc_bp, url_prefix="/api/docs")
 app.register_blueprint(storage_bp, url_prefix="/api/storage")
 app.register_blueprint(task_bp, url_prefix="/api/tasks")
 
-# If run directly, start SocketIO (wraps Flask app)
 if __name__ == "__main__":
-    # Initialize socketio with flask app
     socketio.init_app(app, cors_allowed_origins="*")
-    # run with socketio to enable real-time features
-    print("Starting app with Socket.IO on http://127.0.0.1:5000")
+    print("Starting app with Socket.IO...")
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
