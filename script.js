@@ -41,28 +41,89 @@ async function register(){
   const username = $('reg-username').value.trim();
   const password = $('reg-password').value;
   const role = $('reg-role').value;
-  if(!username || !password){ $('reg-msg').innerText='Enter username & password'; return; }
-  const res = await fetch('/api/user/register', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({username, password, role, profile:{}})
-  });
-  if(res.status === 201){ $('reg-msg').innerText = 'Registered — please login'; showLogin(); }
-  else { const j = await res.json(); $('reg-msg').innerText = j.error || 'Registration failed'; }
+  
+  if(!username || !password){ 
+      $('reg-msg').innerText='Enter username & password'; 
+      return; 
+  }
+    
+  $('reg-msg').innerText = 'Registering...';
+
+  try {
+    const res = await fetch('/api/user/register', {
+        method:'POST', 
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({username, password, role, profile:{}})
+    });
+
+    if(res.status === 201){ 
+        $('reg-msg').innerText = 'Registered — please login'; 
+        showLogin(); 
+    } else {
+        // Handle errors (including non-JSON errors like 400 Bad Request)
+        let errorMsg = `Registration failed (Status: ${res.status})`;
+        try {
+            const j = await res.json();
+            errorMsg = j.error || errorMsg;
+        } catch (e) {
+            // If JSON parse fails, read plain text response
+            const text = await res.text();
+            if(text) errorMsg = text; // Often contains "username exists"
+        }
+        $('reg-msg').innerText = errorMsg;
+    }
+  } catch (err) {
+      console.error(err);
+      $('reg-msg').innerText = 'Registration failed: Network error.';
+  }
 }
 
 async function login(){
   const username = $('login-username').value.trim();
   const password = $('login-password').value;
-  if(!username || !password){ $('login-msg').innerText='Enter credentials'; return; }
-  const res = await fetch('/api/user/login', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({username, password})
-  });
-  const j = await res.json();
-  if(res.ok && j.token){
-    token = j.token; me = j.user; $('login-msg').innerText = 'Login success';
-    await fetchProfile(); showDashboard(); initSocket();
-  } else { $('login-msg').innerText = j.error || 'Login failed'; }
+  
+  if(!username || !password){ 
+    $('login-msg').innerText='Enter credentials'; 
+    return; 
+  }
+  
+  $('login-msg').innerText = 'Logging in...';
+
+  try {
+    const res = await fetch('/api/user/login', {
+      method:'POST', 
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+
+    if (res.ok) {
+       const j = await res.json();
+       if (j.token) {
+           token = j.token; 
+           me = j.user; 
+           $('login-msg').innerText = 'Login success';
+           await fetchProfile(); 
+           showDashboard(); 
+           initSocket();
+       } else {
+           $('login-msg').innerText = 'Login failed: No token received.';
+       }
+    } else {
+       // Handle server errors gracefully
+       let errorMsg = 'Login failed';
+       try {
+           const j = await res.json();
+           errorMsg = j.error || errorMsg;
+       } catch (e) {
+           const text = await res.text();
+           errorMsg = text || `Login failed (Status: ${res.status})`;
+       }
+       $('login-msg').innerText = errorMsg;
+    }
+  } catch (err) {
+     console.error(err);
+     $('login-msg').innerText = 'Login failed: Network error.';
+  }
 }
 
 async function fetchProfile(){
@@ -328,3 +389,4 @@ function initSocket(){ if(socket) return; socket = io(); socket.on('connect', ()
 // small helper to ensure dashboard modules load when returning
 window.showDashboard = showDashboard;
 window.openModule = openModule;
+
