@@ -71,7 +71,7 @@ input, select, textarea {
   border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.22);
   background: rgba(255,255,255,0.03);
-  color: white;
+  color: black;
   font-size: 14px;
   outline: none;
 }
@@ -177,3 +177,4 @@ textarea { min-height: 80px; resize: vertical; }
 .hidden { display:none; }
 .row { display:flex; gap:8px; }
 .typing { color:#fff; font-style:italic; height:20px; }
+
