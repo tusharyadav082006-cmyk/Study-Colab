@@ -77,6 +77,7 @@ h1#brand, .dashboard-title {
 h2 { color: #fff; font-size: 22px; }
 
 /* INPUTS */
+/* INPUTS */
 input, select, textarea {
   width: 100%;
   padding: 12px 14px;
@@ -84,9 +85,15 @@ input, select, textarea {
   border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.22);
   background: rgba(255,255,255,0.03);
-  color: black;
+  color: black; /* CHANGED: Was white */
   font-size: 14px;
   outline: none;
+}
+
+/* ADD THIS: Ensure placeholders are visible against the background */
+input::placeholder, textarea::placeholder {
+  color: #333;
+  opacity: 1;
 }
 textarea { min-height: 80px; resize: vertical; }
 
@@ -190,5 +197,6 @@ textarea { min-height: 80px; resize: vertical; }
 .hidden { display:none; }
 .row { display:flex; gap:8px; }
 .typing { color:#fff; font-style:italic; height:20px; }
+
 
 
